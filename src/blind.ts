@@ -13,7 +13,7 @@ import {
   shutdown,
 } from 'snarkyjs';
 
-class Exercise1 extends SmartContract {
+class BlindMansBluff extends SmartContract {
   @state(Field) x: State<Field>;
 
   constructor(initialBalance: UInt64, address: PublicKey, x: Field) {
@@ -22,7 +22,8 @@ class Exercise1 extends SmartContract {
     this.x = State.init(x);
   }
 
-  @method async update(cubed: Field) {
+  @method
+  async update(cubed: Field) {
     const x = await this.x.get();
     x.mul(x).mul(x).assertEquals(cubed);
     this.x.set(cubed);
@@ -37,10 +38,13 @@ export async function run() {
   Mina.setActiveInstance(Local);
   const account1 = Local.testAccounts[0].privateKey;
   const account2 = Local.testAccounts[1].privateKey;
+  const account3 = Local.testAccounts[2].privateKey;
+  const account4 = Local.testAccounts[3].privateKey;
+
   const snappPrivkey = PrivateKey.random();
   const snappPubkey = snappPrivkey.toPublicKey();
 
-  let snappInstance: Exercise1;
+  let snappInstance: BlindMansBluff;
   const initSnappState = new Field(3);
 
   // Deploys the snapp
@@ -50,7 +54,7 @@ export async function run() {
     const p = await Party.createSigned(account2);
     p.balance.subInPlace(amount);
 
-    snappInstance = new Exercise1(amount, snappPubkey, initSnappState);
+    snappInstance = new BlindMansBluff(amount, snappPubkey, initSnappState);
   })
     .send()
     .wait();
