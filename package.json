@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "exec": "tsc && node dist/blind.js"
+    "exec": "tsc && node dist/blind.js",
+    "one": "tsc && node dist/1_exercise_access.js",
+    "two": "tsc && node dist/1_exercise_multiple_access.js"
   },
   "repository": {
     "type": "git",
