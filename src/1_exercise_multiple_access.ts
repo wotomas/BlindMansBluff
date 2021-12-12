@@ -76,7 +76,8 @@ export async function run() {
     const signature = Signature.create(account2, [newMessage]);
 
     // this should only work if get all the users that created to contract's public key, and myself
-    await snappInstance.update(newMessage, [account1.toPublicKey(), account2.toPublicKey()], account2.toPublicKey(), signature);
+    const result = await snappInstance.update(newMessage, [account1.toPublicKey(), account2.toPublicKey()], account2.toPublicKey(), signature);
+    // console.log("result", result.toString());
   })
     .send()
     .wait();

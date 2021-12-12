@@ -11,16 +11,19 @@ import {
   Bool,
   Party,
   isReady,
-  shutdown, Signature, Circuit,
+  shutdown, Signature, Circuit, Poseidon,
 } from 'snarkyjs';
 
 class BlindMansBluff extends SmartContract {
   // The state of the game: 0 -> antePhase, 1 -> betPhase, 2 -> end
   @state(Bool) isAntePhaseDone: State<Bool>
   @state(UInt64) minBet: State<Field>;
-  @state(PublicKey) turn: State<PublicKey>;
+  @state(Bool) playerOneTurn: State<Bool>;
   @state(Bool) anteOne: State<Bool>;
   @state(Bool) anteTwo: State<Bool>;
+  @state(UInt64) cardOne: State<Field>;
+  @state(UInt64) cardTwo: State<Field>;
+  @state(Field) winnerHash: State<Field>;
 
   // is there max number of states in a smart contract?
   player1: PublicKey;
@@ -43,9 +46,12 @@ class BlindMansBluff extends SmartContract {
     this.isAntePhaseDone = State.init(new Bool(false));
     this.anteOne = State.init(new Bool(false));
     this.anteTwo = State.init(new Bool(false));
+    this.cardOne = State.init(Field.zero);
+    this.cardTwo = State.init(Field.zero);
+    this.winnerHash = State.init(Field.zero);
     this.player1 = player1;
     this.player2 = player2;
-    this.turn = State.init(player1);
+    this.playerOneTurn = State.init(new Bool(true));
     this.minBet = State.init(new Field(1000000001));
   }
 
@@ -170,6 +176,44 @@ class BlindMansBluff extends SmartContract {
   }
 
   @method
+  async didIWin(playerPublicKey: PublicKey) {
+    //TODO: my public key + opponents number => bool
+  }
+
+  @method
+  async initializeGame(playerPublicKey: PublicKey, signature: Signature) {
+    // START: same asserting logics from async bet()
+    // ...
+    // END: same asserting logics from async bet()
+    // after i am verified
+
+    // derive random number from transaction maybe random in the future, currently 'txn hash'
+    // const maybeRandomValue = this.transactionHash();
+    // TODO: this is a rough implementation. Users should be able to draw(): () => (opponentsCardNumber, commitmentOfMyNumber)
+    // TODO: so this draw method should actually be splitted into two parts: 1. committing my random number part, 2. and fetching
+    const userOneNumber = new Field(Math.floor(Math.random() * 10 + 1));
+    let userTwoNumber = new Field(Math.floor(Math.random() * 10 + 1));
+    while (userOneNumber.equals(userTwoNumber).toBoolean()) {
+      userTwoNumber = new Field(Math.floor(Math.random() * 10 + 1));
+    }
+
+    const disUserOneWin = userOneNumber.gt(userTwoNumber)
+
+    console.log("draw userOne", userOneNumber.toString());
+    console.log("draw userTwo", userTwoNumber.toString());
+
+    const resultHash = Poseidon.hash([userOneNumber, userTwoNumber, disUserOneWin.toField()]);
+
+    // so i will use this number to check the winner when the game ends
+    console.log("resultHash", resultHash);
+    this.winnerHash.set(resultHash);
+
+    // assign account1's provided random number to account2
+    // this.cardOne.set(providedRandomNumber);
+    // this.cardTwo.set(providedRandomNumber);
+  }
+
+  @method
   async bet(playerPublicKey: PublicKey, signature: Signature, betAmount: UInt64) {
     // 1. continue only if the gamephase is in betting phase
     const isAntePhaseDone = await this.isAntePhaseDone.get();
@@ -188,11 +232,13 @@ class BlindMansBluff extends SmartContract {
     Bool.or(playerPublicKey.equals(player1), playerPublicKey.equals(player2)).assertEquals(true);
 
     // 5. check if it is my turn to bet
-    const myTurn = await this.turn.get();
-    myTurn.assertEquals(playerPublicKey);
+    const isCallerPlayerOne = Circuit.if(playerPublicKey.equals(player1), new Bool(true), new Bool(false));
+    const isPlayerOneTurn = await this.playerOneTurn.get();
+    isCallerPlayerOne.assertEquals(isPlayerOneTurn);
 
     // verification is done. lets change the state now
-    await this.minBet.set(betAmount.value);
+    this.minBet.set(betAmount.value);
+    this.playerOneTurn.set(isPlayerOneTurn.not())
   }
 }
 
@@ -265,6 +311,25 @@ export async function run() {
     // const p = await Party.createSigned(account2);
     // p.balance.subInPlace(anteBetAmount);
     await game.payAnte(account2.toPublicKey(), sig, anteBetAmount);
+  })
+    .send()
+    .wait()
+    .catch(e => console.log(e));
+
+  // ante phase is done, any user should initialize the game
+  await Mina.transaction(account1, async () => {
+    const sig = Signature.create(account1, []);
+    await game.initializeGame(account1.toPublicKey(), sig);
+  })
+    .send()
+    .wait()
+    .catch(e => console.log(e));
+
+  // once game is initialized, the winner is already decided.
+  // didIWin?
+  await Mina.transaction(account1, async () => {
+    // const sig = Signature.create(account1, []);
+    await game.didIWin(account1.toPublicKey());
   })
     .send()
     .wait()
