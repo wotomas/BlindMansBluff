@@ -1,19 +1,19 @@
 # Mina Project
 
-This project is WIP created for learning and practicing for Mina Bootcamp 2021.
+This project is WIP created for learning and practicing Mina during Bootcamp 2021.
 
 ## Blind Man's Bluff (a.k.a Indian Poker)
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/wMSaGbIaOdE/0.jpg)](https://www.youtube.com/watch?v=wMSaGbIaOdE "Blind Man's Bluff Intro")
 
 A Blind Man's Bluff is a simplified version of poker where each peron sees the cards of all players except their own. I
 am going to implement a standard version where simply high card wins. Each player is dealt one card which is displayed
-to all other players but him or herself. This is followed by a round of betting. Player can raise, or fold and the last
+to all other players but him or herself. This is followed by a round of betting. Player can raise or fold and the last
 person standing or the one with the highest card wins.
 
 ### Disclaimer (2021.12.12)
-
 The description above was what I planned to build. The current version consists of round of ante betting (an initial
-forced bet for all players before the dealing begins) phase. Circuits were tested that enables round of initial betting,
-yet needs improvement in the actual game part.
+forced bet for all players before the dealing begins) phase, rough implementation of card dealing and game win status verifying. 
+In conclusion, the circuits enabling `turnless betting` were tested that enables round of initial betting, yet actual game part needs more improvement.
 
 ### Build & Run
 
@@ -30,18 +30,18 @@ Make sure you have node version >= 16.4!
 
 User interface is not going to be developed in this version. Each user will be facing a board with N-1 cards, where N is
 total number of players. User should be able to GET whose turn currently is to bet, the total pot of the game, the phase
-of the game. User should be able tp POST his or her action (Fold or Raise) with addition of Mina. In short the UI will
-be requesting snapps for following state and should have features to update the state with following interfaces:
+of the game. User should be able to POST his or her action (Fold or Raise) with addition of Mina. In short the UI will
+be requesting snapps for the following state and should have features to update the state with following interfaces:
 
-- GET is it currently my turn to act
-- GET total pot (balance) of the game (balance of the contract)
-- GET game phase (state): Ante Phase, Bet Phase, Result Phase
-- POST pay Ante to be involved in the game
-- POST an action (Fold and Raise) to correctly update the state
+- GET:   is it currently my turn to act
+- GET:   total pot (balance) of the game (balance of the contract)
+- GET:   game phase (state): Ante Phase, Bet Phase, Result Phase
+- POST:  pay Ante to be involved in the game
+- POST:  an action (Fold and Raise) to correctly update the state
 
 ## The High-level flow of the Ante Logic
 
-1. When the game starts, it is time for ante betting, which is an initial forced betting phase for all players before
+1. When the game starts, it is time for ante betting, which is a forced betting phase for all players before
    the dealing begins.
 2. All users should call the `payAnte(publicKey, sig, anteBetAmount)` in order to change the game phase to betting phase
 3. First we need to assert the correct state of the game.
@@ -55,6 +55,11 @@ Since the Ante betting does not have turns to pay, I had to change the number of
 verification work. The contract will know if the caller of the contract is player One or Two by checking it through the
 saved public keys and return a Bool value `isPlayerOne`.
 
+Initially the player is eligible to pay ante if: 
+1. If it is player one, player one has not paid yet (index 2, 4 below)
+2. If it is player two, player two has not paid yet (index 1, 5 below)
+3. on all other cases, it should follow the other player's state
+
 ```
 // index                1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
 // isPlayerOne     (A)  F | T | T | T | F | F | T | F
@@ -62,25 +67,17 @@ saved public keys and return a Bool value `isPlayerOne`.
 // isPlayerTwoPaid (C)  F | F | F | T | F | T | T | T
 // result          (Y)  T | T | F | T | T | F | F | F
 ```
-
-as you can see in the truth table, when it is player one, the result (Y) should be true when
-
-1. If it is player one, player one has not paid yet (index 2, 4)
-2. If it is player two, player two has not paid yet (index 1, 5)
-3. on all other cases, it should follow the other player's state
-
-eventually according to the truth table, the circuit could be derived to
-
+eventually according to the truth table, the circuit could be derived to the following:
 ```
 // Y = A'B'C' + AB'C' + AB'C + A'BC'
 //   => or(and(not(a), not(b), not(c)), and(a, not(b), not(c)), and(a, not(b), c), and(not(a), b, not(c))
 ```
+the circuit that i have to work with is `or(and(not(a), not(b), not(c)), and(a, not(b), not(c)), and(a, not(b), c), and(not(a), b, not(c))`
+I am sure there is a way to simplify this... 
 
-I am sure there is a way to simplify this... the code to check if the public key is in valid state to pay ante is the
-following:
-
+but for now, lets use this circuit to verify if user is eligible to pay ante.
 ```
-// first verify if the game state is good to pay ante for either players
+    // first verify if the game state is good to pay ante for either players
     const isGoodToPayAnte = Bool.or(
       Bool.or(
         Bool.and(
@@ -164,8 +161,11 @@ So this ends up being two joined circuits, which is the following:
 ```
 
 ### Mini conclusion for Ante Phase
-That was some circuit to implement a `turnless betting phase`.
-I might be going on a wrong route. Should check with other's submission for more reference.
+That circuit was able to implement a `turnless betting phase`.
+I might be going on a wrong route. 
+Should check with other's submission for more reference.
+But all the samples had turns in the game, which I wanted to implement was a more
+flexible state for betting (which i am not sure if i accomplished)
 
 ## The High-level flow of the Initializing and Betting Phase
 This part should be very similar with the tictactoe sample, but with some twist in the init section.
@@ -175,6 +175,5 @@ So the smart contract doesn't store both numbers, but can prove you that User On
 winningHash = hash([userOneNumber, userTwoNumber, didUserOneWin])
 ```
 Since the game only uses number with upper bound, this could be broken through brute force, but the idea seems to be there.
-
 
 Once everyone is done betting, the game ends and does payout. (which still needs to be implemented)
