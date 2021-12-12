@@ -1,5 +1,5 @@
 {
-  "name": "snarkyjs-workshop",
+  "name": "snarkyjs-blind-mans-bluff",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,19 +12,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/o1-labs/snarkyjs-workshop.git"
+    "url": "https://github.com/wotomas/BlindMansBluff.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
-  "bugs": {
-    "url": "https://github.com/o1-labs/snarkyjs-workshop/issues"
-  },
   "engines": {
     "node": ">=16.4.0"
   },
-  "homepage": "https://github.com/o1-labs/snarkyjs-workshop#readme",
+  "homepage": "https://github.com/wotomas/BlindMansBluff/blob/main/README.md",
   "dependencies": {
     "prettier": "^2.5.0",
     "snarkyjs": "0.1.10",
