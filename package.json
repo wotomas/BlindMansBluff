@@ -7,6 +7,7 @@
     "exec": "tsc && node dist/blind.js",
     "one": "tsc && node dist/1_exercise_access.js",
     "two": "tsc && node dist/1_exercise_multiple_access.js",
+    "circuit": "tsc && node dist/circuitPractice.js",
     "blind": "tsc && node dist/blind.js"
   },
   "repository": {
@@ -26,7 +27,7 @@
   "homepage": "https://github.com/o1-labs/snarkyjs-workshop#readme",
   "dependencies": {
     "prettier": "^2.5.0",
-    "snarkyjs": "0.1.11",
+    "snarkyjs": "0.1.10",
     "typescript": "^4.5.2"
   }
 }

@@ -18,13 +18,24 @@ class BlindMansBluff extends SmartContract {
   // The state of the game: 0 -> initial betting phase, 1 -> game bet phase, 2 -> game end
   @state(Field) gamePhase: State<Field>;
   @state(UInt64) minBet: State<Field>;
-  // is there max number of states in a smart contract?
   @state(PublicKey) turn: State<PublicKey>;
   @state(Bool) anteOne: State<Bool>;
   @state(Bool) anteTwo: State<Bool>;
 
+  // is there max number of states in a smart contract?
   player1: PublicKey;
   player2: PublicKey;
+
+  @method
+  async getUserOneAnte() {
+    return await this.anteOne.get();
+  }
+
+  @method
+  async getUserTwoAnte() {
+    return await this.anteTwo.get();
+  }
+
 
   constructor(initialBalance: UInt64, address: PublicKey, player1: PublicKey, player2: PublicKey) {
     super(address);
@@ -35,17 +46,7 @@ class BlindMansBluff extends SmartContract {
     this.player1 = player1;
     this.player2 = player2;
     this.turn = State.init(player1);
-    this.minBet = State.init(new Field(10));
-  }
-
-  @method
-  async getUserOneAnte() {
-    return await this.anteOne.get();
-  }
-
-  @method
-  async getUserTwoAnte() {
-    return await this.anteTwo.get();
+    this.minBet = State.init(new Field(1000000001));
   }
 
   @method
@@ -110,10 +111,9 @@ class BlindMansBluff extends SmartContract {
     );
     console.log('\n\n====== DEBUG assertion circuit ======');
     console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte);
-    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte);
-    console.log("result (Y)", isGoodToPayAnte);
-
+    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte.toBoolean());
+    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte.toBoolean());
+    console.log("result (Y)", isGoodToPayAnte.toBoolean());
     isGoodToPayAnte.assertEquals(true);
 
     // isPlayerOne      (A) T | T | F | F
@@ -133,30 +133,33 @@ class BlindMansBluff extends SmartContract {
       ))
     console.log('\n\n====== DEBUG circuit ======');
     console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte);
-    console.log("result (Y)", y);
-    console.log('\n\n');
+    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte.toBoolean());
+    console.log("result (Y)", y.toBoolean());
 
     // isPlayerOne      (A) T | T | F | F
     // isPlayerTwoPaid  (C) T | F | T | F
     // result           (Y')T | F | F | T
     // same logic with player one, but inverse
-    // newY = AC + A'C'
+    // yy = AC + A'C'
     //   => or(and(a, c), and(not(a), not(b)))
-    const newY = Bool.or(
+    const yy = Bool.or(
       Bool.and(isPlayerOne, isPlayerTwoPaidAnte),
       Bool.and(isPlayerOne.not(), isPlayerTwoPaidAnte.not()),
     );
     console.log('\n\n====== DEBUG circuit two ======');
     console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte);
-    console.log("result (Y')", newY);
-    console.log('\n\n');
+    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte.toBoolean());
+    console.log("result (Y')", yy.toBoolean());
+    
+    this.anteOne.set(new Bool(y));
+    this.anteTwo.set(new Bool(yy));
 
-    // TODO: smthing is not working here. doesn't update according to the logs hmm
-    this.anteOne.set(y);
-    this.anteTwo.set(newY);
-    this.balance.addInPlace(betAmount);
+    // (await this.anteOne.get()).assertEquals(y);
+    // (await this.anteTwo.get()).assertEquals(newY);
+    console.log("AnteOne", (await this.anteOne.get()).toBoolean(), y.toBoolean());
+    console.log("AnteTwo", (await this.anteTwo.get()).toBoolean(), yy.toBoolean());
+
+    // this.balance.addInPlace(betAmount);
   }
 
   @method
@@ -228,54 +231,49 @@ export async function run() {
   console.log("State[1] minBet",  contract.snapp.appState[1].toString());
   console.log("State[2] account1 x",  contract.snapp.appState[2].toString());
   console.log("State[3] account1 y",  contract.snapp.appState[3].toString());
-  // @ts-ignore
-  console.log("State[4] anteOne",  (await game.getUserOneAnte()));
-  // @ts-ignore
-  console.log("State[5] anteTwo",  (await game.getUserTwoAnte()));
+  console.log("State[4] anteOne", contract.snapp.appState[4].toString());
+  console.log("State[5] anteTwo", contract.snapp.appState[5].toString());
   // game starts, time for ante betting (an initial forced bet for all players before the dealing begins)
   await Mina.transaction(account1, async () => {
-    const anteBetAmount = UInt64.fromNumber(10);
+    const anteBetAmount = UInt64.fromNumber(1000000001);
     const sig = Signature.create(account1, anteBetAmount.toFields());
-    const p = await Party.createSigned(account1);
-    p.balance.subInPlace(anteBetAmount);
+    // const p = await Party.createSigned(account1);
+    // p.balance.subInPlace(anteBetAmount);
     await game.payAnte(account1.toPublicKey(), sig, anteBetAmount);
-
-    console.log('After Ante Betting from user 1');
-    // @ts-ignore
-    console.log("State[4] anteOne",  (await game.getUserOneAnte()));
-    // @ts-ignore
-    console.log("State[5] anteTwo",  (await game.getUserTwoAnte()));
   })
     .send()
     .wait()
     .catch(e => console.log(e));
+
+  console.log('After Ante Betting from user 1');
+  // @ts-ignore
+  console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
+  // @ts-ignore
+  console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());
 
   // ante payment for account2
   await Mina.transaction(account2, async () => {
-    const anteBetAmount = UInt64.fromNumber(10);
+    const anteBetAmount = UInt64.fromNumber(1000000001);
     const sig = Signature.create(account2, anteBetAmount.toFields());
-    const p = await Party.createSigned(account2);
-    p.balance.subInPlace(anteBetAmount);
+    // const p = await Party.createSigned(account2);
+    // p.balance.subInPlace(anteBetAmount);
     await game.payAnte(account2.toPublicKey(), sig, anteBetAmount);
-
-    console.log('After Ante Betting from user 2');
-    // @ts-ignore
-    console.log("State[4] anteOne",  (await game.getUserOneAnte()));
-    // @ts-ignore
-    console.log("State[5] anteTwo",  (await game.getUserTwoAnte()));
   })
     .send()
     .wait()
     .catch(e => console.log(e));
 
-  console.log("Game Finished current state");
+  console.log('After Ante Betting from user 2');
   // @ts-ignore
-  console.log("State[4] anteOne",  await game.getUserOneAnte());
+  console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
   // @ts-ignore
-  console.log("State[5] anteTwo",  await game.getUserTwoAnte());
-  console.log("Account1 balance", a.balance.value.toString());
-  console.log("Account2 balance", b.balance.value.toString());
-  console.log("Contract balance", contract.balance.value.toString());
+  console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());
+  // console.log("Game Finished current state");
+  // console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
+  // console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());
+  // console.log("Account1 balance", a.balance.value.toString());
+  // console.log("Account2 balance", b.balance.value.toString());
+  // console.log("Contract balance", contract.balance.value.toString());
 }
 
 run();

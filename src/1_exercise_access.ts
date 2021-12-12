@@ -17,10 +17,12 @@ import {
 class Exercise1Access extends SmartContract {
   @state(Field) db: State<Field>;
   @state(PublicKey) owner: State<PublicKey>;
+  @state(Bool) testingBool: State<Bool>;
 
   constructor(initialBalance: UInt64, address: PublicKey, owner: PublicKey, initialValue: Field) {
     super(address);
     this.balance.addInPlace(initialBalance);
+    this.testingBool = State.init(new Bool(false));
     this.owner = State.init(owner);
     this.db = State.init(initialValue);
   }
@@ -35,6 +37,7 @@ class Exercise1Access extends SmartContract {
     signature.verify(publicKey, [newValue]).assertEquals(true);
 
     this.db.set(newValue);
+    this.testingBool.set(new Bool(true));
   }
 }
 
@@ -60,6 +63,9 @@ export async function run() {
     p.balance.subInPlace(amount);
 
     snappInstance = new Exercise1Access(amount, snappPubkey, account1.toPublicKey(), initSnappState);
+    // console.log('initial state value', a.snapp.appState[0].toString());
+    // console.log('initial state value', a.snapp.appState[1].toString());
+    // console.log('initial state value', a.snapp.appState[2].toString());
   })
     .send()
     .wait();
@@ -79,6 +85,9 @@ export async function run() {
 
   console.log('Exercise 1');
   console.log('final state value', a.snapp.appState[0].toString());
+  console.log('final state value', a.snapp.appState[1].toString());
+  console.log('final state value', a.snapp.appState[2].toString());
+  console.log('final state value', a.snapp.appState[3].toString());
 }
 
 run();

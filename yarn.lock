@@ -17,10 +17,10 @@ reflect-metadata@^0.1.13:
   resolved "https://registry.yarnpkg.com/reflect-metadata/-/reflect-metadata-0.1.13.tgz#67ae3ca57c972a2aa1642b10fe363fe32d49dc08"
   integrity sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==
 
-snarkyjs@0.1.11:
-  version "0.1.11"
-  resolved "https://registry.yarnpkg.com/snarkyjs/-/snarkyjs-0.1.11.tgz#31ab8bf1ace7d6f561820a29734d5a63a382911b"
-  integrity sha512-fXt6nVO8uL9w/ZH2y/9jN0heUEj6qpIlazt2kBewm0jeS4lCN2K0uMOUcxxjf97vKTYsKjGuEv+ZUK6xnQJZtw==
+snarkyjs@0.1.10:
+  version "0.1.10"
+  resolved "https://registry.yarnpkg.com/snarkyjs/-/snarkyjs-0.1.10.tgz#10cd54be76e6fcb9ce5aaacf00bccbcf6183bc4a"
+  integrity sha512-4sdX4Vimy/oMCc6Z3U7HVCLfs/OQiXsGT/0kpbghJ+ZQJ+jBGpB8Y/Kyud9s/hl+zQcBUUK/riz5XolSJ0QirA==
   dependencies:
     env "^0.0.2"
     reflect-metadata "^0.1.13"
