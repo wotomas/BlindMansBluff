@@ -15,8 +15,8 @@ import {
 } from 'snarkyjs';
 
 class BlindMansBluff extends SmartContract {
-  // The state of the game: 0 -> initial betting phase, 1 -> game bet phase, 2 -> game end
-  @state(Field) gamePhase: State<Field>;
+  // The state of the game: 0 -> antePhase, 1 -> betPhase, 2 -> end
+  @state(Bool) isAntePhaseDone: State<Bool>
   @state(UInt64) minBet: State<Field>;
   @state(PublicKey) turn: State<PublicKey>;
   @state(Bool) anteOne: State<Bool>;
@@ -40,7 +40,7 @@ class BlindMansBluff extends SmartContract {
   constructor(initialBalance: UInt64, address: PublicKey, player1: PublicKey, player2: PublicKey) {
     super(address);
     this.balance.addInPlace(initialBalance);
-    this.gamePhase = State.init(Field.zero);
+    this.isAntePhaseDone = State.init(new Bool(false));
     this.anteOne = State.init(new Bool(false));
     this.anteTwo = State.init(new Bool(false));
     this.player1 = player1;
@@ -52,8 +52,8 @@ class BlindMansBluff extends SmartContract {
   @method
   async payAnte(playerPublicKey: PublicKey, signature: Signature, betAmount: UInt64) {
     // START: same asserting logics for async bet()
-    const gamePhase = await this.gamePhase.get();
-    gamePhase.assertEquals(new Field(0));
+    const isAntePhaseDone = await this.isAntePhaseDone.get();
+    isAntePhaseDone.assertEquals(new Bool(false));
     const minBet = await this.minBet.get(); // diff: ante bet should be all equal
     minBet.equals(betAmount.value).assertEquals(true);
     signature.verify(playerPublicKey, betAmount.toFields()).assertEquals(true);
@@ -150,7 +150,7 @@ class BlindMansBluff extends SmartContract {
     console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
     console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte.toBoolean());
     console.log("result (Y')", yy.toBoolean());
-    
+
     this.anteOne.set(new Bool(y));
     this.anteTwo.set(new Bool(yy));
 
@@ -159,14 +159,21 @@ class BlindMansBluff extends SmartContract {
     console.log("AnteOne", (await this.anteOne.get()).toBoolean(), y.toBoolean());
     console.log("AnteTwo", (await this.anteTwo.get()).toBoolean(), yy.toBoolean());
 
+    // when everyone is done paying there ante, change game phase to giving one card each
+    const isEveryoneReady = Bool.and(
+      await this.anteOne.get(),
+      await this.anteTwo.get()
+    );
+
+    this.isAntePhaseDone.set(isEveryoneReady);
     // this.balance.addInPlace(betAmount);
   }
 
   @method
   async bet(playerPublicKey: PublicKey, signature: Signature, betAmount: UInt64) {
     // 1. continue only if the gamephase is in betting phase
-    const gamePhase = await this.gamePhase.get();
-    gamePhase.assertEquals(new Field(1));
+    const isAntePhaseDone = await this.isAntePhaseDone.get();
+    isAntePhaseDone.assertEquals(new Bool(true));
 
     // 2. continue only if the bet amount is higher than the current min bet
     const minBet = await this.minBet.get();
