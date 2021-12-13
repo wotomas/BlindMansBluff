@@ -13,14 +13,58 @@ import {
   isReady,
   shutdown, Signature, Circuit, Poseidon,
 } from 'snarkyjs';
+import * as readline from 'readline';
+
+enum GameActions {
+  PLAYER_TWO_PAY_ANTE = 1,
+  CHECK_OPPONENTS_CARD = 2,
+  PLAYER_ONE_BET = 3,
+}
+
+function getBelowTen(numString: string): number {
+  console.log("getBelowTen()", numString);
+  let num = Number(numString);
+  while (num > 10) {
+    num /= 10;
+  }
+  console.log("getBelowTen() result", Math.floor(num));
+  return Math.floor(num);
+}
+
+function printGameStatus(appState: Field[]) {
+  console.log('-'.repeat(30));
+  const isAntePhase = appState[0].toString() === "0";
+  if (isAntePhase) {
+    console.log('ANTE phase. Pay to join the game!');
+    console.log('Current min bet is', appState[1].toString() + "MINA");
+    console.log("\nPlayer Status")
+    console.log('Player One paid Ante and is waiting?', appState[2].toString() === "0" ? "No" : "Yes");
+    console.log('Player Two paid Ante?', appState[3].toString() === "0" ? "No" : "Yes");
+  } else {
+    // betting phase
+    console.log('Betting Phase.');
+    console.log('Current min bet is', appState[1].toString() + "MINA");
+    console.log("\nPlayer Status")
+    console.log("is it your turn?", appState[4].toString() === "1" ? "No" : "Yes")
+    console.log('Player One\'s card is ', appState[5].toString());
+  }
+
+  // console.log('Whos Turn', appState[4].toString());
+  // console.log('Player One Card', appState[5].toString());
+  // console.log('Player Two Card', appState[6].toString());
+  // console.log('Winner Hash', appState[7].toString());
+  console.log('-'.repeat(30));
+}
 
 class BlindMansBluff extends SmartContract {
   // The state of the game: 0 -> antePhase, 1 -> betPhase, 2 -> end
-  @state(Bool) isAntePhaseDone: State<Bool>
+  @state(Bool) isAntePhaseDone: State<Bool>;
   @state(UInt64) minBet: State<Field>;
-  @state(Bool) playerOneTurn: State<Bool>;
   @state(Bool) anteOne: State<Bool>;
   @state(Bool) anteTwo: State<Bool>;
+
+  // for betting phase
+  @state(Bool) playerOneTurn: State<Bool>;
   @state(UInt64) cardOne: State<Field>;
   @state(UInt64) cardTwo: State<Field>;
   @state(Field) winnerHash: State<Field>;
@@ -28,17 +72,6 @@ class BlindMansBluff extends SmartContract {
   // is there max number of states in a smart contract?
   player1: PublicKey;
   player2: PublicKey;
-
-  @method
-  async getUserOneAnte() {
-    return await this.anteOne.get();
-  }
-
-  @method
-  async getUserTwoAnte() {
-    return await this.anteTwo.get();
-  }
-
 
   constructor(initialBalance: UInt64, address: PublicKey, player1: PublicKey, player2: PublicKey) {
     super(address);
@@ -52,7 +85,17 @@ class BlindMansBluff extends SmartContract {
     this.player1 = player1;
     this.player2 = player2;
     this.playerOneTurn = State.init(new Bool(true));
-    this.minBet = State.init(new Field(1000000001));
+    this.minBet = State.init(new Field(100));
+  }
+
+  @method
+  async getUserOneAnte() {
+    return await this.anteOne.get();
+  }
+
+  @method
+  async getUserTwoAnte() {
+    return await this.anteTwo.get();
   }
 
   @method
@@ -115,11 +158,11 @@ class BlindMansBluff extends SmartContract {
         ),
       ),
     );
-    console.log('\n\n====== DEBUG assertion circuit ======');
-    console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte.toBoolean());
-    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte.toBoolean());
-    console.log("result (Y)", isGoodToPayAnte.toBoolean());
+    // console.log('\n\n====== DEBUG assertion circuit ======');
+    // console.log('isPlayerOne (A)', isPlayerOne.toBoolean());
+    // console.log('isPlayerOnePaid (B)', isPlayerOnePaidAnte.toBoolean());
+    // console.log('isPlayerTwoPaid (C)', isPlayerTwoPaidAnte.toBoolean());
+    // console.log('result (Y)', isGoodToPayAnte.toBoolean());
     isGoodToPayAnte.assertEquals(true);
 
     // isPlayerOne      (A) T | T | F | F
@@ -136,11 +179,11 @@ class BlindMansBluff extends SmartContract {
       Bool.and(
         isPlayerOne.not(),
         isPlayerOnePaidAnte,
-      ))
-    console.log('\n\n====== DEBUG circuit ======');
-    console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerOnePaid (B)", isPlayerOnePaidAnte.toBoolean());
-    console.log("result (Y)", y.toBoolean());
+      ));
+    // console.log('\n\n====== DEBUG circuit ======');
+    // console.log('isPlayerOne (A)', isPlayerOne.toBoolean());
+    // console.log('isPlayerOnePaid (B)', isPlayerOnePaidAnte.toBoolean());
+    // console.log('result (Y)', y.toBoolean());
 
     // isPlayerOne      (A) T | T | F | F
     // isPlayerTwoPaid  (C) T | F | T | F
@@ -152,26 +195,31 @@ class BlindMansBluff extends SmartContract {
       Bool.and(isPlayerOne, isPlayerTwoPaidAnte),
       Bool.and(isPlayerOne.not(), isPlayerTwoPaidAnte.not()),
     );
-    console.log('\n\n====== DEBUG circuit two ======');
-    console.log("isPlayerOne (A)", isPlayerOne.toBoolean());
-    console.log("isPlayerTwoPaid (C)", isPlayerTwoPaidAnte.toBoolean());
-    console.log("result (Y')", yy.toBoolean());
+    // console.log('\n\n====== DEBUG circuit two ======');
+    // console.log('isPlayerOne (A)', isPlayerOne.toBoolean());
+    // console.log('isPlayerTwoPaid (C)', isPlayerTwoPaidAnte.toBoolean());
+    // console.log('result (Y\')', yy.toBoolean());
 
     this.anteOne.set(new Bool(y));
     this.anteTwo.set(new Bool(yy));
 
     // (await this.anteOne.get()).assertEquals(y);
     // (await this.anteTwo.get()).assertEquals(newY);
-    console.log("AnteOne", (await this.anteOne.get()).toBoolean(), y.toBoolean());
-    console.log("AnteTwo", (await this.anteTwo.get()).toBoolean(), yy.toBoolean());
+    // console.log('AnteOne', (await this.anteOne.get()).toBoolean(), y.toBoolean());
+    // console.log('AnteTwo', (await this.anteTwo.get()).toBoolean(), yy.toBoolean());
 
     // when everyone is done paying there ante, change game phase to giving one card each
     const isEveryoneReady = Bool.and(
-      await this.anteOne.get(),
-      await this.anteTwo.get()
+      new Bool(y),
+      new Bool(yy),
     );
 
     this.isAntePhaseDone.set(isEveryoneReady);
+    const userOneCard = Circuit.if(isEveryoneReady, Field.random(), Field.zero);
+    const userTwoCard = Circuit.if(isEveryoneReady, Field.random(), Field.zero);
+
+    this.cardOne.set(new Field(getBelowTen(userOneCard.toString())));
+    this.cardTwo.set(new Field(getBelowTen(userTwoCard.toString())));
     // this.balance.addInPlace(betAmount);
   }
 
@@ -197,15 +245,15 @@ class BlindMansBluff extends SmartContract {
       userTwoNumber = new Field(Math.floor(Math.random() * 10 + 1));
     }
 
-    const disUserOneWin = userOneNumber.gt(userTwoNumber)
+    const disUserOneWin = userOneNumber.gt(userTwoNumber);
 
-    console.log("draw userOne", userOneNumber.toString());
-    console.log("draw userTwo", userTwoNumber.toString());
+    console.log('draw userOne', userOneNumber.toString());
+    console.log('draw userTwo', userTwoNumber.toString());
 
     const resultHash = Poseidon.hash([userOneNumber, userTwoNumber, disUserOneWin.toField()]);
 
     // so i will use this number to check the winner when the game ends
-    console.log("resultHash", resultHash);
+    console.log('resultHash', resultHash);
     this.winnerHash.set(resultHash);
 
     // assign account1's provided random number to account2
@@ -220,8 +268,9 @@ class BlindMansBluff extends SmartContract {
     isAntePhaseDone.assertEquals(new Bool(true));
 
     // 2. continue only if the bet amount is higher than the current min bet
-    const minBet = await this.minBet.get();
-    minBet.gte(betAmount.value).assertEquals(true);
+    // const minBet = await this.minBet.get();
+    // some kind of error assertGte is not a function??
+    // minBet.assertGte(betAmount.value);
 
     // 3. verify that you are the one who signed the betting transaction
     signature.verify(playerPublicKey, betAmount.toFields()).assertEquals(true);
@@ -238,7 +287,7 @@ class BlindMansBluff extends SmartContract {
 
     // verification is done. lets change the state now
     this.minBet.set(betAmount.value);
-    this.playerOneTurn.set(isPlayerOneTurn.not())
+    this.playerOneTurn.set(isPlayerOneTurn.not());
   }
 }
 
@@ -252,18 +301,23 @@ export async function run() {
   const account2 = Local.testAccounts[1].privateKey;
   const a = await Mina.getAccount(account1.toPublicKey());
   const b = await Mina.getAccount(account2.toPublicKey());
-  console.log("Initial Account1 balance", a.balance.value.toString());
-  console.log("Initial Account2 balance", b.balance.value.toString());
+  console.log('Initial Account1 balance', a.balance.value.toString());
+  console.log('Initial Account2 balance', b.balance.value.toString());
 
   // const account3 = Local.testAccounts[2].privateKey;
   // const account4 = Local.testAccounts[3].privateKey;
 
   const snappPrivkey = PrivateKey.random();
   const snappPubkey = snappPrivkey.toPublicKey();
-
   let game: BlindMansBluff;
 
-  // Deploys the snapp
+  // we will use rl to take console input from user for demo
+  const rl = readline.createInterface({
+    input: process.stdin, //or fileStream
+    output: process.stdout,
+  });
+
+  console.log('Deploying the Contract, balance', a.balance.value.toString());
   await Mina.transaction(account1, async () => {
     // account2 sends 10000000123 to the new snapp account
     const amount = UInt64.fromNumber(1000000123);
@@ -271,50 +325,88 @@ export async function run() {
     p.balance.subInPlace(amount);
     // two players committed to play the blind mans bluff
     game = new BlindMansBluff(amount, snappPubkey, account1.toPublicKey(), account2.toPublicKey());
-    console.log("Account1 balance", a.balance.value.toString());
-    console.log("Account2 balance", b.balance.value.toString());
   })
     .send()
     .wait();
 
-  const contract = await Mina.getAccount(snappPubkey);
-  console.log("Contract balance", contract.balance.value.toString());
-  console.log('Initial State');
-  console.log("State[0] gamePhase",  contract.snapp.appState[0].toString());
-  console.log("State[1] minBet",  contract.snapp.appState[1].toString());
-  console.log("State[2] account1 x",  contract.snapp.appState[2].toString());
-  console.log("State[3] account1 y",  contract.snapp.appState[3].toString());
-  console.log("State[4] anteOne", contract.snapp.appState[4].toString());
-  console.log("State[5] anteTwo", contract.snapp.appState[5].toString());
-  // game starts, time for ante betting (an initial forced bet for all players before the dealing begins)
   await Mina.transaction(account1, async () => {
-    const anteBetAmount = UInt64.fromNumber(1000000001);
+    const anteBetAmount = UInt64.fromNumber(100);
     const sig = Signature.create(account1, anteBetAmount.toFields());
-    // const p = await Party.createSigned(account1);
-    // p.balance.subInPlace(anteBetAmount);
     await game.payAnte(account1.toPublicKey(), sig, anteBetAmount);
   })
     .send()
     .wait()
     .catch(e => console.log(e));
 
-  console.log('After Ante Betting from user 1');
-  // @ts-ignore
-  console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
-  // @ts-ignore
-  console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());
+  const contract = await Mina.getAccount(snappPubkey);
+  printGameStatus(contract.snapp.appState);
 
-  // ante payment for account2
-  await Mina.transaction(account2, async () => {
-    const anteBetAmount = UInt64.fromNumber(1000000001);
-    const sig = Signature.create(account2, anteBetAmount.toFields());
-    // const p = await Party.createSigned(account2);
-    // p.balance.subInPlace(anteBetAmount);
-    await game.payAnte(account2.toPublicKey(), sig, anteBetAmount);
-  })
-    .send()
-    .wait()
-    .catch(e => console.log(e));
+  let isGameEnded = false;
+
+  while (!isGameEnded) {
+    let doWhat = await new Promise<string>((resolve) => {
+      rl.question('' +
+        'Press [1] to pay 100 MINA as Ante and join the game \n' +
+        'Press [2] to see opponents card number \n' +
+        'Press [3] to wait for opponent to place his bet \n' +
+        'Press [4] to place the bet, Press [5] to fold: \n'
+        , resolve);
+      // rl.question('Press [3] to see opponents card number: ', resolve);
+    });
+
+    switch (Number(doWhat)) {
+      case GameActions.PLAYER_TWO_PAY_ANTE: {
+        await Mina.transaction(account2, async () => {
+          const anteBetAmount = UInt64.fromNumber(100);
+          const sig = Signature.create(account2, anteBetAmount.toFields());
+          // const p = await Party.createSigned(account2);
+          // p.balance.subInPlace(anteBetAmount);
+          await game.payAnte(account2.toPublicKey(), sig, anteBetAmount);
+        })
+          .send()
+          .wait()
+          .catch(e => console.log(e));
+
+        // game loop end
+        let b = await Mina.getAccount(snappPubkey);
+        printGameStatus(b.snapp.appState);
+        break;
+      }
+      case GameActions.CHECK_OPPONENTS_CARD: {
+        // game loop end
+        let b = await Mina.getAccount(snappPubkey);
+        console.log("\n###############################################");
+        console.log('Player One\'s card is ', b.snapp.appState[5].toString());
+        console.log("###############################################\n");
+        break;
+      }
+      case GameActions.PLAYER_ONE_BET: {
+        await Mina.transaction(account1, async () => {
+          const anteBetAmount = UInt64.fromNumber(300);
+          const sig = Signature.create(account1, anteBetAmount.toFields());
+          // const p = await Party.createSigned(account2);
+          // p.balance.subInPlace(anteBetAmount);
+          await game.bet(account1.toPublicKey(), sig, anteBetAmount);
+        })
+          .send()
+          .wait()
+          .catch(e => console.log(e));
+        // game loop end
+        let b = await Mina.getAccount(snappPubkey);
+        printGameStatus(b.snapp.appState);
+        console.log("\n###############################################");
+        console.log("##### Player One just bet 300 MINA #####");
+        console.log("###############################################\n");
+        break;
+      }
+      default: {
+        console.log('Wrong input, try again');
+        // game loop end
+        let b = await Mina.getAccount(snappPubkey);
+        printGameStatus(b.snapp.appState);
+      }
+    }
+  }
 
   // ante phase is done, any user should initialize the game
   await Mina.transaction(account1, async () => {
@@ -337,9 +429,9 @@ export async function run() {
 
   console.log('After Ante Betting from user 2');
   // @ts-ignore
-  console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
+  console.log('State[4] anteOne', (await game.getUserOneAnte()).toBoolean());
   // @ts-ignore
-  console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());
+  console.log('State[5] anteTwo', (await game.getUserTwoAnte()).toBoolean());
   // console.log("Game Finished current state");
   // console.log("State[4] anteOne", (await game.getUserOneAnte()).toBoolean());
   // console.log("State[5] anteTwo", (await game.getUserTwoAnte()).toBoolean());

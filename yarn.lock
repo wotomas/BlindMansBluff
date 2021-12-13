@@ -2,36 +2,41 @@
 # yarn lockfile v1
 
 
-env@^0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/env/-/env-0.0.2.tgz#50c19f307b129a45845b6b686df5b39dd40d1cf0"
-  integrity sha1-UMGfMHsSmkWEW2tobfWzndQNHPA=
+"@types/node@^16.11.12":
+  "integrity" "sha512-+2Iggwg7PxoO5Kyhvsq9VarmPbIelXP070HMImEpbtGCoyWNINQj4wzjbQCXzdHTRXnqufutJb5KAURZANNBAw=="
+  "resolved" "https://registry.npmjs.org/@types/node/-/node-16.11.12.tgz"
+  "version" "16.11.12"
 
-prettier@^2.5.0:
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.5.1.tgz#fff75fa9d519c54cf0fce328c1017d94546bc56a"
-  integrity sha512-vBZcPRUR5MZJwoyi3ZoyQlc1rXeEck8KgeC9AwwOn+exuxLxq5toTRDTSaVrXHxelDMHy9zlicw8u66yxoSUFg==
+"env@^0.0.2":
+  "integrity" "sha1-UMGfMHsSmkWEW2tobfWzndQNHPA="
+  "resolved" "https://registry.npmjs.org/env/-/env-0.0.2.tgz"
+  "version" "0.0.2"
 
-reflect-metadata@^0.1.13:
-  version "0.1.13"
-  resolved "https://registry.yarnpkg.com/reflect-metadata/-/reflect-metadata-0.1.13.tgz#67ae3ca57c972a2aa1642b10fe363fe32d49dc08"
-  integrity sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==
+"prettier@^2.5.0":
+  "integrity" "sha512-FM/zAKgWTxj40rH03VxzIPdXmj39SwSjwG0heUcNFwI+EMZJnY93yAiKXM3dObIKAM5TA88werc8T/EwhB45eg=="
+  "resolved" "https://registry.npmjs.org/prettier/-/prettier-2.5.0.tgz"
+  "version" "2.5.0"
 
-snarkyjs@0.1.10:
-  version "0.1.10"
-  resolved "https://registry.yarnpkg.com/snarkyjs/-/snarkyjs-0.1.10.tgz#10cd54be76e6fcb9ce5aaacf00bccbcf6183bc4a"
-  integrity sha512-4sdX4Vimy/oMCc6Z3U7HVCLfs/OQiXsGT/0kpbghJ+ZQJ+jBGpB8Y/Kyud9s/hl+zQcBUUK/riz5XolSJ0QirA==
+"reflect-metadata@^0.1.13":
+  "integrity" "sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg=="
+  "resolved" "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz"
+  "version" "0.1.13"
+
+"snarkyjs@0.1.10":
+  "integrity" "sha512-4sdX4Vimy/oMCc6Z3U7HVCLfs/OQiXsGT/0kpbghJ+ZQJ+jBGpB8Y/Kyud9s/hl+zQcBUUK/riz5XolSJ0QirA=="
+  "resolved" "https://registry.npmjs.org/snarkyjs/-/snarkyjs-0.1.10.tgz"
+  "version" "0.1.10"
   dependencies:
-    env "^0.0.2"
-    reflect-metadata "^0.1.13"
-    tslib "^2.3.0"
+    "env" "^0.0.2"
+    "reflect-metadata" "^0.1.13"
+    "tslib" "^2.3.0"
 
-tslib@^2.3.0:
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.3.1.tgz#e8a335add5ceae51aa261d32a490158ef042ef01"
-  integrity sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==
+"tslib@^2.3.0":
+  "integrity" "sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw=="
+  "resolved" "https://registry.npmjs.org/tslib/-/tslib-2.3.1.tgz"
+  "version" "2.3.1"
 
-typescript@^4.5.2:
-  version "4.5.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.3.tgz#afaa858e68c7103317d89eb90c5d8906268d353c"
-  integrity sha512-eVYaEHALSt+s9LbvgEv4Ef+Tdq7hBiIZgii12xXJnukryt3pMgJf6aKhoCZ3FWQsu6sydEnkg11fYXLzhLBjeQ==
+"typescript@^4.5.2":
+  "integrity" "sha512-5BlMof9H1yGt0P8/WF+wPNw6GfctgGjXp5hkblpyT+8rkASSmkUKMXrxR0Xg8ThVCi/JnHQiKXeBaEwCeQwMFw=="
+  "resolved" "https://registry.npmjs.org/typescript/-/typescript-4.5.2.tgz"
+  "version" "4.5.2"
