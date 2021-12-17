@@ -9,6 +9,23 @@ A Blind Man's Bluff is a simplified version of poker where each peron sees the c
 am going to implement a standard version where simply high card wins. Each player is dealt one card which is displayed
 to all other players but him or herself. This is followed by a round of betting. Player can raise or fold and the last
 person standing or the one with the highest card wins.
+```console
+// abstract part of the private part of the game: the smart contract is unaware of the actual card numbers of the game, yet players will know if he or she won the game
+(playerOneCommitmentHash: hash, playerTwoNumber: number, playerThreeNumber: number) => didIWin: boolean
+(playerTwoCommitmentHash: hash, playerOneNumber: number, playerThreeNumber: number) => didIWin: boolean
+(playerThreeCommitmentHash: hash, playerOneNumber: number, playerTwoNumber: number) => didIWin: boolean
+...
+```
+
+### Todo
+ - [X] basic setup for the game loop
+ - [X] betting phase
+ - [X] turnless betting (Ante) phase 
+ - [X] console UI to interact with the contract
+ - [ ] verification of the winner
+ - [ ] betting mina balances
+ - [ ] raise and fold feature
+ - [ ] add player 3 to the demo for better demonstration
 
 ### Disclaimer (2021.12.12)
 The description above was what I planned to build. The current version consists of round of ante betting (an initial
